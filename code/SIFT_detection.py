@@ -7,6 +7,16 @@ class sift_model:
         self.img_1_path = img_1
         self.img_2_path = img_2
         self.sift = cv2.SIFT_create()
+        # builtin features matcher function
+
+        # brute force matcher
+        self.bf = cv2.BFMatcher(cv2.NORM_L2, crossCheck=False)
+
+        # flann matcher
+        index_params = dict(algorithm=1, trees=5)
+        search_params = dict(checks=50)
+
+        self.flann = cv2.FlannBasedMatcher(index_params, search_params)
 
     # Loading data to opencv and  preprocessing to BnW
     def load_image(self):
@@ -25,6 +35,28 @@ class sift_model:
         keypoints_1, descriptors_1 = self.sift.detectAndCompute(self.img_1, None)
         keypoints_2, descriptors_2 = self.sift.detectAndCompute(self.img_2, None)
         return keypoints_1, descriptors_1, keypoints_2, descriptors_2
+
+    def remove_best_self(self, matches):
+        better_matches = list()
+        for a, b, c in matches:
+            if a.trainIdx == a.queryIdx:
+                better_matches.append([b, c])
+            elif b.trainIdx == b.queryIdx:
+                better_matches.append([a, c])
+            elif c.trainIdx == c.queryIdx:
+                better_matches.append([a, b])
+        return better_matches
+
+    # features matching
+    def features_matching(self, des1, des2):
+        matches = self.flann.knnMatch(des1, des2, k=3)
+        better_matches = self.remove_best_self(matches)
+        best_match = list()
+        for m, n in better_matches:
+            # threshold value 0.5 from paper
+            if m.distance < 0.5 * n.distance:
+                best_match.append([m, n])
+        return best_match
 
     # print image
     def show_image(self, img_1, img_2):
@@ -46,7 +78,18 @@ def main():
     # model.show_image(img_1, img_2)
 
     # getting keypoint
-    
+    (
+        keypoints_1,
+        descriptors_1,
+        keypoints_2,
+        descriptors_2,
+    ) = model.getKeypointDescriptor()
+
+    # calculate best match
+    best_match_value = model.features_matching(descriptors_1, descriptors_2)
+
+    print(best_match_value)
+
 
 if __name__ == "__main__":
     main()
