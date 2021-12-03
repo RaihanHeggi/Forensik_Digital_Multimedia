@@ -7,7 +7,7 @@ class sift_model:
     def __init__(self, img_1, img_2):
         self.img_1_path = img_1
         self.img_2_path = img_2
-        self.MIN_MATCH_COUNT = 10
+        self.MIN_MATCH_COUNT = 3
         self.sift = cv2.SIFT_create()
         # builtin features matcher function
 
@@ -85,19 +85,14 @@ class sift_model:
     def affine_ransac(self, kp1, kp2, best_match):
         final_matches = list()
         if len(best_match) > self.MIN_MATCH_COUNT:
-            src_pts = np.float32([kp1[m.queryIdx].pt for m in best_match]).reshape(
-                -1, 1, 2
-            )
-            dst_pts = np.float32([kp2[m.trainIdx].pt for m in best_match]).reshape(
-                -1, 1, 2
-            )
-
+            src_pts = np.float32([kp1[m.queryIdx].pt for m in best_match])
+            dst_pts = np.float32([kp2[m.trainIdx].pt for m in best_match])
             retval, inliers = cv2.estimateAffine2D(
                 src_pts,
                 dst_pts,
                 method=cv2.RANSAC,
                 ransacReprojThreshold=3,
-                maxIters=100,
+                maxIters=1000,
                 confidence=0.99,
             )
 
@@ -155,9 +150,8 @@ class sift_model:
         plt.show()
         return
 
-    def show_final_matches(self, keypoints_1, keypoints_2, final_matches, retval):
+    def show_final_matches(self, keypoints, final_matches, retval):
         img_RGB = cv2.cvtColor(self.img_2, cv2.COLOR_GRAY2RGB)
-        res = cv2.matchTemplate(img_RGB, self.img_2, eval("cv2.TM_CCORR_NORMED"))
 
         list_point1 = []
         list_point2 = []
@@ -168,8 +162,8 @@ class sift_model:
             point2 = j.queryIdx
 
             # Get the coordinates, x - columns, y - rows
-            (x1, y1) = keypoints_2[point1].pt
-            (x2, y2) = keypoints_1[point2].pt
+            (x1, y1) = keypoints[point1].pt
+            (x2, y2) = keypoints[point2].pt
 
             # Append to each list
             list_point1.append((int(x1), int(y1)))
@@ -177,22 +171,24 @@ class sift_model:
 
             # Draw a small circle at both co-ordinates: radius 4, colour green, thickness = 1
             # copy keypoints circles
-            cv2.circle(img_RGB, (int(x1), int(y1)), 4, (0, 255, 0), 1)
+            cv2.circle(img_RGB, (int(x1), int(y1)), 4, (255, 0, 0), 1)
             # original keypoints circles
             cv2.circle(img_RGB, (int(x2), int(y2)), 4, (0, 255, 0), 1)
 
             # Draw a line in between the two points, thickness = 1, colour green
-            cv2.line(img_RGB, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 1)
+            # cv2.line(img_RGB, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 1)
 
+        # 6) Computing region correlation map
+        # 6.1) WrapAffine
         wrapAffine_img = cv2.warpAffine(self.img_2, retval, (self.w, self.h))
-        cv2.imwrite("final_result.png", wrapAffine_img)
+        cv2.imwrite("res.png", wrapAffine_img)
 
         # 3) Output
-        cv2.imwrite("final_matches.png", res)
+        # cv2.imshow("result", img_RGB)
+        cv2.imwrite("final_matches.png", img_RGB)
         # cv2.imshow("corelation", img_correlation_map)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
-
         return
 
 
@@ -229,7 +225,7 @@ def main():
     final_matches, retval = model.affine_ransac(keypoints_1, keypoints_2, good_match)
 
     # getting final_matches location, un-comment to see result
-    model.show_final_matches(keypoints_1, keypoints_2, final_matches, retval)
+    model.show_final_matches(keypoints_1, final_matches, retval)
 
 
 if __name__ == "__main__":
