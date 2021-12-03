@@ -1,11 +1,13 @@
 import cv2
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 class sift_model:
     def __init__(self, img_1, img_2):
         self.img_1_path = img_1
         self.img_2_path = img_2
+        self.MIN_MATCH_COUNT = 3
         self.sift = cv2.SIFT_create()
         # builtin features matcher function
 
@@ -28,6 +30,9 @@ class sift_model:
         self.img_1 = cv2.cvtColor(self.img_1, cv2.COLOR_BGR2GRAY)
         self.img_2 = cv2.cvtColor(self.img_2, cv2.COLOR_BGR2GRAY)
 
+        # load size
+        self.h, self.w = self.img_1.shape
+
         return self.img_1, self.img_2
 
     # getting keypoint value using SIFT algorithm
@@ -49,14 +54,62 @@ class sift_model:
 
     # features matching
     def features_matching(self, des1, des2):
-        matches = self.flann.knnMatch(des1, des2, k=3)
-        better_matches = self.remove_best_self(matches)
+        matches = self.flann.knnMatch(des1, des2, k=2)
+
+        matchesMask = [[0, 0] for i in range(len(matches))]
         best_match = list()
-        for m, n in better_matches:
+        # ratio test as per Lowe's paper
+        for i, (m, n) in enumerate(matches):
             # threshold value 0.5 from paper
             if m.distance < 0.5 * n.distance:
-                best_match.append([m, n])
-        return best_match
+                matchesMask[i] = [0, 1]
+                best_match.append(m)
+
+        draws_params = dict(
+            matchColor=(0, 255, 0),
+            singlePointColor=(255, 0, 0),
+            matchesMask=matchesMask,
+            flags=cv2.DrawMatchesFlags_DEFAULT,
+        )
+
+        ################ old value #####################
+        # better_matches = self.remove_best_self(matches)
+        # best_match = list()
+        # for m, n in better_matches:
+        #     # threshold value 0.5 from paper
+        #     if m.distance < 0.5 * n.distance:
+        #         best_match.append(n)
+        return matches, matchesMask, draws_params, best_match
+
+    # calculate affine transform using ransac
+    def affine_ransac(self, kp1, kp2, best_match):
+        final_matches = list()
+        if len(best_match) > self.MIN_MATCH_COUNT:
+            src_pts = np.float32([kp1[m.queryIdx].pt for m in best_match])
+            dst_pts = np.float32([kp2[m.trainIdx].pt for m in best_match])
+            retval, inliers = cv2.estimateAffine2D(
+                src_pts,
+                dst_pts,
+                method=cv2.RANSAC,
+                ransacReprojThreshold=3,
+                maxIters=1000,
+                confidence=0.99,
+            )
+
+            dst = inliers.ravel().tolist()
+
+            for i in range(len(best_match)):
+                if dst[i] == 1:
+                    final_matches.append(best_match[i])
+
+        else:
+            print(
+                "Not enough matches are found - %d/%d"
+                % (len(best_match), self.MIN_MATCH_COUNT)
+            )
+            matchesMask = None
+            final_matches = None
+        return final_matches, retval
 
     # print image
     def show_image(self, img_1, img_2):
@@ -64,6 +117,78 @@ class sift_model:
         ax[0].imshow(img_1, cmap="gray")
         ax[1].imshow(img_2, cmap="gray")
         plt.show()
+        return
+
+    # print_keypoint location
+    def show_keypoint(self, keypoints_1, keypoints_2):
+        # colored
+        colored_img_1 = cv2.imread(self.img_1_path)
+        colored_img_2 = cv2.imread(self.img_2_path)
+
+        # black and white
+        img_1 = cv2.drawKeypoints(self.img_1, keypoints_1, colored_img_1)
+        img_2 = cv2.drawKeypoints(self.img_2, keypoints_2, colored_img_2)
+
+        figure, ax = plt.subplots(1, 2, figsize=(16, 8))
+        ax[0].imshow(img_1, cmap="gray")
+        ax[1].imshow(img_2, cmap="gray")
+
+        plt.show()
+        return
+
+    def show_matches(self, keypoints_1, keypoints_2, matches, draw_params):
+        img_3 = cv2.drawMatchesKnn(
+            self.img_1,
+            keypoints_1,
+            self.img_2,
+            keypoints_2,
+            matches,
+            None,
+            **draw_params,
+        )
+        plt.imshow(img_3)
+        plt.show()
+        return
+
+    def show_final_matches(self, keypoints, final_matches, retval):
+        img_RGB = cv2.cvtColor(self.img_2, cv2.COLOR_GRAY2RGB)
+
+        list_point1 = []
+        list_point2 = []
+        for j in final_matches:
+
+            # Get the matching keypoints for each of the images
+            point1 = j.trainIdx
+            point2 = j.queryIdx
+
+            # Get the coordinates, x - columns, y - rows
+            (x1, y1) = keypoints[point1].pt
+            (x2, y2) = keypoints[point2].pt
+
+            # Append to each list
+            list_point1.append((int(x1), int(y1)))
+            list_point2.append((int(x2), int(y2)))
+
+            # Draw a small circle at both co-ordinates: radius 4, colour green, thickness = 1
+            # copy keypoints circles
+            cv2.circle(img_RGB, (int(x1), int(y1)), 4, (255, 0, 0), 1)
+            # original keypoints circles
+            cv2.circle(img_RGB, (int(x2), int(y2)), 4, (0, 255, 0), 1)
+
+            # Draw a line in between the two points, thickness = 1, colour green
+            # cv2.line(img_RGB, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 1)
+
+        # 6) Computing region correlation map
+        # 6.1) WrapAffine
+        wrapAffine_img = cv2.warpAffine(self.img_2, retval, (self.w, self.h))
+        cv2.imwrite("res.png", wrapAffine_img)
+
+        # 3) Output
+        # cv2.imshow("result", img_RGB)
+        cv2.imwrite("final_matches.png", img_RGB)
+        # cv2.imshow("corelation", img_correlation_map)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
         return
 
 
@@ -85,10 +210,22 @@ def main():
         descriptors_2,
     ) = model.getKeypointDescriptor()
 
-    # calculate best match
-    best_match_value = model.features_matching(descriptors_1, descriptors_2)
+    # getting keypoint picture position,  un-comment to see result
+    # model.show_keypoint(keypoints_1, keypoints_2)
 
-    print(best_match_value)
+    # calculate best match
+    best_match_value, matches_mask, draw_params, good_match = model.features_matching(
+        descriptors_1, descriptors_2
+    )
+
+    # getting bestmatch location, un-comment to see result
+    # model.show_matches(keypoints_1, keypoints_2, best_match_value, draw_params)
+
+    # affine transform
+    final_matches, retval = model.affine_ransac(keypoints_1, keypoints_2, good_match)
+
+    # getting final_matches location, un-comment to see result
+    model.show_final_matches(keypoints_1, final_matches, retval)
 
 
 if __name__ == "__main__":
