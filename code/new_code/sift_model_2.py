@@ -193,10 +193,10 @@ class sift_model:
             # copy keypoints circles
             cv2.circle(img_RGB, (int(x1), int(y1)), 4, (0, 255, 0), 1)
             # original keypoints circles
-            #cv2.circle(img_RGB, (int(x2), int(y2)), 4, (0, 255, 0), 1)
+            cv2.circle(img_RGB, (int(x2), int(y2)), 4, (0, 255, 0), 1)
 
             # Draw a line in between the two points, thickness = 1, colour green
-            #cv2.line(img_RGB, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 1)
+            cv2.line(img_RGB, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 1)
 
         return cv2.imwrite("point_location.png", img_RGB)
 
