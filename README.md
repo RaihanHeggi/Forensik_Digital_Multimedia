@@ -1,5 +1,8 @@
 ## Forensik Digital Multimedia (Duplicate Region)
-File Code Duplicate Region untuk Keperluan Kuliah Forensik Digital, Detection Using SIFT Algorithm with Features Matching
+File Code Duplicate Region untuk Keperluan Kuliah Forensik Digital, Deteksi menggunakan  SIFT Algorithm with Features Matching 
+
+## Dalam Pengembangan
+- Sistem dapat mendeteksi gambar yang dihapus atau dihilangkan saat ini sistem belum mampu melakukan hal tersebut
 
 ## Library dibutuhkan 
 - Opencv 
