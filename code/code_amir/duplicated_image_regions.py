@@ -42,7 +42,7 @@ class Ui_Dialog(object):
         self.pushButton.setText(_translate("Dialog", "Lihat Hasil"))
 
     def onclick_Pilih(self):
-        image = QFileDialog.getOpenFileName(None, 'OpenFile', '', "Image file(*.jpg)")
+        image = QFileDialog.getOpenFileName(None, 'OpenFile', '', "Image file(*.png)")
         #         imagePath = image[0]
         #         pixmap = QPixmap(imagePath)
         #         self.fotoAsli.setPixmap(pixmap)
@@ -50,7 +50,7 @@ class Ui_Dialog(object):
         self.filename.setText(image[0])
 
     def onclick_Pilih2(self):
-        image2 = QFileDialog.getOpenFileName(None, 'OpenFile', '', "Image file(*.jpg)")
+        image2 = QFileDialog.getOpenFileName(None, 'OpenFile', '', "Image file(*.png)")
         self.filename2.setText(image2[0])
 
     def onclick_Proses(self):
