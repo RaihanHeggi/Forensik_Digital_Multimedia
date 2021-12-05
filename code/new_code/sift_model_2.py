@@ -236,7 +236,7 @@ class sift_model:
 
         # Perform the rotation
         M = cv2.getRotationMatrix2D(center, angle, scale)
-        rotated = cv2.warpAffine(image, M, (w, h))
+        rotated = cv2.warpAffine(image, M, (image.w, image.h))
 
         return rotated
 
