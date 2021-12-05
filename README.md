@@ -1,9 +1,10 @@
 ## Forensik Digital Multimedia (Duplicate Region)
-File Code Duplicate Region untuk Keperluan Kuliah Forensik Digital
+File Code Duplicate Region untuk Keperluan Kuliah Forensik Digital, Detection Using SIFT Algorithm with Features Matching
 
 ## Library dibutuhkan 
 - Opencv 
 - Matplotlib
+- Scipy
 
 ## Colaborator
 
