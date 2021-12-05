@@ -1,0 +1,10 @@
+TUGAS #2: DR using feature matching
+Pelajari dan kaji paper terlampir. Ide secara umum sudah dijelaskan di kelas. Hal yang perlu diulas:
+1. Buat satu (1) pasang sampel data: original dan forgery version
+2. Gambarkan bagan proses yang merepresentasikan proses keseluruhan. Didalamnya mencakup metoda yang diterapkan.
+3. Implementasikan setiap metoda dalam bagan tersebut menggunakan citra yang dibuat pada no 1). Minimal 50%.
+4. Tuliskan hasil kajian dalam PPT Slide dengan struktur sbb:
+     a. Persoalan yang diselesaikan dalam paper
+     b. Bagan proses dan penjelasannya
+     c. Hasil implementasi
+     d. Keunggulan dan keterbatasan sistem yang dibangun
