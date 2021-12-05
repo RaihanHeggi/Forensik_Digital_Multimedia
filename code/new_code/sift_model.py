@@ -1,3 +1,5 @@
+import math
+
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
@@ -173,7 +175,7 @@ class sift_model:
 
 
 def main():
-    img_path = "dataset_example_blur.png"
+    img_path = "data_set_other/dataset_example_blur.png"
 
     # create model
     model = sift_model()
