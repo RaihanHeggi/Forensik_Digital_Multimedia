@@ -1,6 +1,7 @@
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
+import self as self
 from scipy.spatial.distance import pdist
 from math import sqrt
 
