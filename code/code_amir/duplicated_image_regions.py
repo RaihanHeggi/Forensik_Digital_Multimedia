@@ -15,13 +15,13 @@ class Ui_Dialog(object):
         self.filename.setGeometry(QtCore.QRect(20, 130, 511, 22))
         self.filename.setObjectName("filename")
         self.browse = QtWidgets.QPushButton(Dialog)
-        self.browse.setGeometry(QtCore.QRect(550, 130, 93, 28))
+        self.browse.setGeometry(QtCore.QRect(550, 130, 150, 28))
         self.browse.setObjectName("browse")
         self.filename2 = QtWidgets.QLineEdit(Dialog)
         self.filename2.setGeometry(QtCore.QRect(20, 170, 511, 21))
         self.filename2.setObjectName("filename2")
         self.browse2 = QtWidgets.QPushButton(Dialog)
-        self.browse2.setGeometry(QtCore.QRect(550, 170, 93, 28))
+        self.browse2.setGeometry(QtCore.QRect(550, 170, 150, 28))
         self.browse2.setObjectName("browse2")
         self.pushButton = QtWidgets.QPushButton(Dialog)
         self.pushButton.setGeometry(QtCore.QRect(30, 230, 181, 41))
@@ -36,9 +36,9 @@ class Ui_Dialog(object):
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
-        Dialog.setWindowTitle(_translate("Dialog", "Dialog"))
-        self.browse.setText(_translate("Dialog", "Browse"))
-        self.browse2.setText(_translate("Dialog", "Browse"))
+        Dialog.setWindowTitle(_translate("Dialog", "Duplicated Image Regions"))
+        self.browse.setText(_translate("Dialog", "Browse File Original"))
+        self.browse2.setText(_translate("Dialog", "Browse File Fake"))
         self.pushButton.setText(_translate("Dialog", "Lihat Hasil"))
 
     def onclick_Pilih(self):
