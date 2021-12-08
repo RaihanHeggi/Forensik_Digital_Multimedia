@@ -102,6 +102,7 @@ class sift_model:
             confidence=0.99,
         )
 
+        # Mendapatkan nilai fitur yang berkorelasi
         matchesMask = inliers.ravel().tolist()
 
         # filter with ransac
@@ -135,11 +136,11 @@ class sift_model:
 
         return final_matches, retval
 
-    def compute_correlation_region(self, final_matches, retval):
+    def compute_correlation_region(self, retval):
         wrapAffine_img = cv2.warpAffine(self.gray_image, retval, (self.w, self.h))
 
         # correlation region
-        blank_image = np.zeros((self.h, self.w, 1), np.uint8)
+        blank_image = np.zeros((self.h, self.w), np.uint8)
 
         for y in range(0, self.h - 4):
             for x in range(0, self.w - 4):
@@ -149,18 +150,23 @@ class sift_model:
                 # Try Using General Corellation
                 # Reference https://stackoverflow.com/questions/59608470/how-to-find-correlation-between-two-images
                 # gathering sum value
-                n = len(x)
-                x = np.sum(window1)
-                y = np.sum(window2)
+                n = 25
+                sum_X = np.sum(window1)
+                sum_Y = np.sum(window2)
                 xy = np.sum(window1 * window2)
-                squareSum_x = np.sum(window1 * window1)
-                squareSum_y = np.sum(window2 * window2)
+                squareSum_X = np.sum(window1 * window1)
+                squareSum_Y = np.sum(window2 * window2)
 
-                top = (n * xy) - (x * y)
-                bottom = sqrt(n * squareSum_x - (x * x) * (n * squareSum_y - (y * y)))
+                top = n * xy - sum_X * sum_Y
+                bottom = np.sqrt(
+                    abs(
+                        (n * squareSum_X - sum_X * sum_X)
+                        * (n * squareSum_Y - sum_Y * sum_Y)
+                    )
+                )
 
                 # Using Paper Based Correlation Formula
-                # a1 = window1[3][3]
+                # a1 = np.mean(window1)
                 # a2 = window2[3][3]
 
                 # mean1 = cv2.mean(window1)
@@ -183,7 +189,7 @@ class sift_model:
         cv2.imwrite("wrapAffine_img.png", wrapAffine_img)
         cv2.imwrite("blank_image.png", blank_image)
 
-        return final_matches
+        return
 
     def show_result(self, final_matches, keypoints):
         list_point1 = []
@@ -256,7 +262,7 @@ class sift_model:
 
 
 def main():
-    img_path = "rebahanpalsu.jpg"
+    img_path = "car.jpeg"
 
     # create model
     model = sift_model()
@@ -285,7 +291,7 @@ def main():
     # print(final_matches)
 
     # Region Corellation
-    last_matches = model.compute_correlation_region(final_matches, retval)
+    model.compute_correlation_region(retval)
     model.show_result(final_matches, keypoint)
 
 
