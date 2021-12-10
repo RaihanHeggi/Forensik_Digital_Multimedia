@@ -24,7 +24,8 @@ class sift_model:
 
     # function to extract picture data (keypoint and descriptor)
     def featureExtractor(self):
-        self.sift = cv2.SIFT_create()
+        self.sift = cv2.SIFT_create(nOctaveLayers=7, sigma=0.5)
+        # self.sift = cv2.SIFT_create()
         self.key_points, self.descriptors = self.sift.detectAndCompute(
             self.gray_image, None
         )
@@ -49,7 +50,7 @@ class sift_model:
         self.bf = cv2.BFMatcher(self.distance, crossCheck=False)
 
         # setup ratio with value from papers
-        ratio = 0.5
+        ratio = 0.7
 
         # matching process
         matches = self.bf.knnMatch(self.descriptors, self.descriptors, k=self.k)
@@ -88,28 +89,31 @@ class sift_model:
         # making one inliers list to save value
         inliers = []
 
-        # affine transform and ransac
-        p1 = np.float32([self.key_points[m.trainIdx].pt for m in good_list])
-        p2 = np.float32([self.key_points[m.queryIdx].pt for m in good_list])
+        MIN_MATCH_COUNT = 3
 
-        # getting inliers using ransac
-        retval, inliers = cv2.estimateAffine2D(
-            p1,
-            p2,
-            method=cv2.RANSAC,
-            ransacReprojThreshold=3,
-            maxIters=100,
-            confidence=0.99,
-        )
+        if len(good_list) > MIN_MATCH_COUNT:
+            # affine transform and ransac
+            p1 = np.float32([self.key_points[m.trainIdx].pt for m in good_list])
+            p2 = np.float32([self.key_points[m.queryIdx].pt for m in good_list])
 
-        # Mendapatkan nilai fitur yang berkorelasi
-        matchesMask = inliers.ravel().tolist()
+            # getting inliers using ransac
+            retval, inliers = cv2.estimateAffine2D(
+                p1,
+                p2,
+                method=cv2.RANSAC,
+                ransacReprojThreshold=3,
+                maxIters=100,
+                confidence=0.99,
+            )
 
-        # filter with ransac
-        final_matches = []
-        for i in range(len(good_list)):
-            if matchesMask[i] == 1:
-                final_matches.append(good_list[i])
+            # Mendapatkan nilai fitur yang berkorelasi
+            matchesMask = inliers.ravel().tolist()
+
+            # filter with ransac
+            final_matches = []
+            for i in range(len(good_list)):
+                if matchesMask[i] == 1:
+                    final_matches.append(good_list[i])
 
         # good_match = list()
         # for i, m in enumerate(match_p1):
@@ -262,7 +266,7 @@ class sift_model:
 
 
 def main():
-    img_path = "car.jpeg"
+    img_path = "mirror.png"
 
     # create model
     model = sift_model()

@@ -1,43 +1,26 @@
-import math
+with open("input.in", "r") as f:
+    contents = f.readlines()
 
-
-def g(stringValue):
-    i = 0
-    new_string = ""
-    while i < (len(stringValue) - 1):
-        new_string += stringValue[i + 1]
-        i += 1
-    return new_string
-
-
-def f(stringValue):
-    if len(stringValue) == 0:
-        return ""
-    elif len(stringValue) == 1:
-        return stringValue
+contents = [s.rstrip() for s in contents]
+counter_data = 0
+iterasi = 1
+for x in contents[1:]:
+    if counter_data == 0:
+        A = int(x)
+        counter_data += 1
+    elif counter_data == 1:
+        B = int(x)
+        counter_data += 1
     else:
-        return f(g(stringValue)) + stringValue[0]
+        K = int(x)
 
+        divisible_k = 0
+        for i in range(A, B):
+            if i % K == 0:
+                print(i)
+                divisible_k += 1
 
-def h(integerValue, stringValue):
-    while integerValue != 1:
-        if integerValue % 2 == 0:
-            integerValue = integerValue / 2
-        else:
-            integerValue = 3 * integerValue + 1
-        stringValue = f(stringValue)
-    return stringValue
-
-
-def pow_val(x, y):
-    if y == 0:
-        return 1
-    else:
-        return x * pow(x, y - 1)
-
-
-print(h(1, "fruits"))
-print(h(2, "fruits"))
-print(h(5, "fruits"))
-print(h(pow_val(2, 1000000000000000), "fruits"))
-print(h(pow_val(2, 9831050005000007), "fruits"))
+        # print("Case ", iterasi, ":", divisible_k)
+        break
+        iterasi += 1
+        counter_data = 0
