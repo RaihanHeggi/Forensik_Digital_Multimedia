@@ -24,7 +24,7 @@ class sift_model:
 
     # function to extract picture data (keypoint and descriptor)
     def featureExtractor(self):
-        self.sift = cv2.SIFT_create(nOctaveLayers=7, sigma=0.6)
+        self.sift = cv2.SIFT_create(nOctaveLayers=6, sigma=0.6)
         # self.sift = cv2.SIFT_create()
         self.key_points, self.descriptors = self.sift.detectAndCompute(
             self.gray_image, None
@@ -109,8 +109,6 @@ class sift_model:
             # Mendapatkan nilai fitur yang berkorelasi
             matchesMask = inliers.ravel().tolist()
 
-            print(matchesMask)
-
             # filter with ransac
             final_matches = []
             for i in range(len(good_list)):
@@ -148,6 +146,7 @@ class sift_model:
         # correlation region
         blank_image = np.zeros((self.h, self.w), np.uint8)
 
+        point_match = []
         for y in range(0, self.h - 4):
             for x in range(0, self.w - 4):
                 window1 = self.gray_image[y : y + 5, x : x + 5]
@@ -340,7 +339,7 @@ class sift_model:
 
 
 def main():
-    img_path = "3 (2)_forgery.jpg"
+    img_path = "kuda_mirror.png"
 
     # create model
     model = sift_model()
