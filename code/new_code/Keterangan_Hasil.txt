@@ -1,0 +1,5 @@
+Keypoint_location: Hasil Pencarian Keypoint Dengan SIFT
+feature_matching: Lokasi keypoint yang match
+wrapAffine_img: merupakan hasil estimasi affine
+blank_image: merupakan hasil region correlation map
+point_location: hasil inlier point hasil pemrosesan affine ransac

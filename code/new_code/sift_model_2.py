@@ -339,7 +339,7 @@ class sift_model:
 
 
 def main():
-    img_path = "kuda_mirror.png"
+    img_path = "angkot1.jpg"
 
     # create model
     model = sift_model()
