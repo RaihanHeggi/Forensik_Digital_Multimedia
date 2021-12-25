@@ -50,7 +50,7 @@ class sift_model:
         self.bf = cv2.BFMatcher(self.distance, crossCheck=False)
 
         # setup ratio with value from papers
-        ratio = 0.7
+        ratio = 0.5
 
         # matching process
         matches = self.bf.knnMatch(self.descriptors, self.descriptors, k=self.k)
@@ -140,6 +140,7 @@ class sift_model:
 
         return final_matches, retval
 
+    # function to make region correlation map image
     def compute_correlation_region(self, retval):
         wrapAffine_img = cv2.warpAffine(self.gray_image, retval, (self.w, self.h))
 
@@ -196,6 +197,7 @@ class sift_model:
 
         return
 
+    # function to show result but without line
     def show_result(self, final_matches, keypoints):
         list_point1 = []
         list_point2 = []
@@ -221,11 +223,9 @@ class sift_model:
 
             cv2.circle(img_RGB, (int(x2), int(y2)), 4, (0, 255, 0), 1)
 
-            # Draw a line in between the two points, thickness = 1, colour green
-            # cv2.line(img_RGB, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 1)
-
         return cv2.imwrite("point_location.png", img_RGB)
 
+        # function to draw result with line
         def show_result_2(self, final_matches, keypoints):
             list_point1 = []
             list_point2 = []
@@ -265,6 +265,17 @@ class sift_model:
         cv2.destroyAllWindows()
         return
 
+    # function to create keypoint image
+    def show_keypoint(self, keypoints):
+        return cv2.drawKeypoints(self.gray_image, keypoints, self.img)
+
+    # function to draw match point using drawMatches
+    def show_matches(self, keypoint_1, keypoint_2, matches):
+        return cv2.drawMatches(
+            self.gray_image, keypoint_1, matches, self.gray_image, flags=2,
+        )
+
+    # function to show keypoint matches in one image
     def show_matches_2(self, final_matches, keypoints):
         img_RGB = cv2.cvtColor(self.gray_image, cv2.COLOR_GRAY2RGB)
         list_point1 = []
@@ -294,16 +305,6 @@ class sift_model:
 
         return cv2.imwrite("feature_matching.png", img_RGB)
 
-    # function to create keypoint image
-    def show_keypoint(self, keypoints):
-        return cv2.drawKeypoints(self.gray_image, keypoints, self.img)
-
-    # function to draw match point
-    def show_matches(self, keypoint_1, keypoint_2, matches):
-        return cv2.drawMatches(
-            self.gray_image, keypoint_1, matches, self.gray_image, flags=2,
-        )
-
     # detecting multiple region
     # not completed
     # def multiple_region(self, final_matches_old):
@@ -321,25 +322,12 @@ class sift_model:
     #     return
 
     # function to save image
-
     def save_image(self, image_name, image):
         return cv2.imwrite(image_name, image)
 
-    def rotate(image, angle, center=None, scale=1.0):
-        (self.h, self.w) = image.shape[:2]
-
-        if center is None:
-            center = (self.w / 2, self.h / 2)
-
-        # Perform the rotation
-        M = cv2.getRotationMatrix2D(center, angle, scale)
-        rotated = cv2.warpAffine(image, M, (w, h))
-
-        return rotated
-
 
 def main():
-    img_path = "angkot1.jpg"
+    img_path = "3 (2)_forgery.jpg"
 
     # create model
     model = sift_model()
