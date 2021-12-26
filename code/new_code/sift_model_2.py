@@ -1,7 +1,6 @@
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-import self as self
 from scipy.spatial.distance import pdist
 from math import sqrt
 
@@ -25,7 +24,8 @@ class sift_model:
 
     # function to extract picture data (keypoint and descriptor)
     def featureExtractor(self):
-        self.sift = cv2.SIFT_create()
+        self.sift = cv2.SIFT_create(nOctaveLayers=6, sigma=0.6)
+        # self.sift = cv2.SIFT_create()
         self.key_points, self.descriptors = self.sift.detectAndCompute(
             self.gray_image, None
         )
@@ -89,27 +89,31 @@ class sift_model:
         # making one inliers list to save value
         inliers = []
 
-        # affine transform and ransac
-        p1 = np.float32([self.key_points[m.trainIdx].pt for m in good_list])
-        p2 = np.float32([self.key_points[m.queryIdx].pt for m in good_list])
+        MIN_MATCH_COUNT = 3
 
-        # getting inliers using ransac
-        retval, inliers = cv2.estimateAffine2D(
-            p1,
-            p2,
-            method=cv2.RANSAC,
-            ransacReprojThreshold=3,
-            maxIters=100,
-            confidence=0.99,
-        )
+        if len(good_list) > MIN_MATCH_COUNT:
+            # affine transform and ransac
+            p1 = np.float32([self.key_points[m.trainIdx].pt for m in good_list])
+            p2 = np.float32([self.key_points[m.queryIdx].pt for m in good_list])
 
-        matchesMask = inliers.ravel().tolist()
+            # getting inliers using ransac
+            retval, inliers = cv2.estimateAffine2D(
+                p1,
+                p2,
+                method=cv2.RANSAC,
+                ransacReprojThreshold=3,
+                maxIters=100,
+                confidence=0.99,
+            )
 
-        # filter with ransac
-        final_matches = []
-        for i in range(len(good_list)):
-            if matchesMask[i] == 1:
-                final_matches.append(good_list[i])
+            # Mendapatkan nilai fitur yang berkorelasi
+            matchesMask = inliers.ravel().tolist()
+
+            # filter with ransac
+            final_matches = []
+            for i in range(len(good_list)):
+                if matchesMask[i] == 1:
+                    final_matches.append(good_list[i])
 
         # good_match = list()
         # for i, m in enumerate(match_p1):
@@ -136,30 +140,50 @@ class sift_model:
 
         return final_matches, retval
 
-    def compute_correlation_region(self, final_matches, retval):
+    # function to make region correlation map image
+    def compute_correlation_region(self, retval):
         wrapAffine_img = cv2.warpAffine(self.gray_image, retval, (self.w, self.h))
-        cv2.imwrite("wrapAffine_img.png", wrapAffine_img)
 
         # correlation region
-        blank_image = np.zeros((self.h, self.w, 1), np.uint8)
+        blank_image = np.zeros((self.h, self.w), np.uint8)
 
-        for y in range(0, self.h - 3):
-            for x in range(0, self.w - 3):
-                window1 = self.gray_image[y : y + 3, x : x + 3]
-                window2 = wrapAffine_img[y : y + 3, x : x + 3]
+        point_match = []
+        for y in range(0, self.h - 4):
+            for x in range(0, self.w - 4):
+                window1 = self.gray_image[y : y + 5, x : x + 5]
+                window2 = wrapAffine_img[y : y + 5, x : x + 5]
 
-                a1 = window1[1][1]
-                a2 = window2[1][1]
+                # Try Using General Corellation
+                # Reference https://stackoverflow.com/questions/59608470/how-to-find-correlation-between-two-images
+                # gathering sum value
+                n = 25
+                sum_X = np.sum(window1)
+                sum_Y = np.sum(window2)
+                xy = np.sum(window1 * window2)
+                squareSum_X = np.sum(window1 * window1)
+                squareSum_Y = np.sum(window2 * window2)
 
-                mean1 = cv2.mean(window1)
-                mean2 = cv2.mean(window2)
+                top = n * xy - sum_X * sum_Y
+                bottom = np.sqrt(
+                    abs(
+                        (n * squareSum_X - sum_X * sum_X)
+                        * (n * squareSum_Y - sum_Y * sum_Y)
+                    )
+                )
 
-                mean1_num = mean1[0]
-                mean2_num = mean2[0]
-                b1 = a1 - mean1_num
-                b2 = a2 - mean2_num
-                top = b1 * b2
-                bottom = sqrt((b1 * b1) * (b2 * b2))
+                # Using Paper Based Correlation Formula
+                # a1 = np.mean(window1)
+                # a2 = window2[3][3]
+
+                # mean1 = cv2.mean(window1)
+                # mean2 = cv2.mean(window2)
+
+                # mean1_num = mean1[0]
+                # mean2_num = mean2[0]
+                # b1 = a1 - mean1_num
+                # b2 = a2 - mean2_num
+                # top = b1 * b2
+                # bottom = sqrt((b1 * b1) * (b2 * b2))
 
                 if bottom > 0:
                     intensity = top / bottom
@@ -168,10 +192,12 @@ class sift_model:
                     intensity = 0
                     blank_image[y + 1, x + 1] = intensity
 
+        cv2.imwrite("wrapAffine_img.png", wrapAffine_img)
         cv2.imwrite("blank_image.png", blank_image)
 
-        return final_matches
+        return
 
+    # function to show result but without line
     def show_result(self, final_matches, keypoints):
         list_point1 = []
         list_point2 = []
@@ -194,12 +220,43 @@ class sift_model:
             # copy keypoints circles
             cv2.circle(img_RGB, (int(x1), int(y1)), 4, (0, 255, 0), 1)
             # original keypoints circles
-            #cv2.circle(img_RGB, (int(x2), int(y2)), 4, (0, 255, 0), 1)
 
-            # Draw a line in between the two points, thickness = 1, colour green
-            #cv2.line(img_RGB, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 1)
+            cv2.circle(img_RGB, (int(x2), int(y2)), 4, (0, 255, 0), 1)
 
         return cv2.imwrite("point_location.png", img_RGB)
+
+        # function to draw result with line
+        def show_result_2(self, final_matches, keypoints):
+            list_point1 = []
+            list_point2 = []
+            img_RGB = cv2.cvtColor(self.gray_image, cv2.COLOR_GRAY2RGB)
+            for j in final_matches:
+
+                # Get the matching keypoints for each of the images
+                point1 = j.trainIdx
+                point2 = j.queryIdx
+
+                # Get the coordinates, x - columns, y - rows
+                (x1, y1) = keypoints[point1].pt
+                (x2, y2) = keypoints[point2].pt
+
+                # Append to each list
+                list_point1.append((int(x1), int(y1)))
+                list_point2.append((int(x2), int(y2)))
+
+                # Draw a small circle at both co-ordinates: radius 4, colour green, thickness = 1
+                # copy keypoints circles
+                cv2.circle(img_RGB, (int(x1), int(y1)), 4, (0, 255, 0), 1)
+                # original keypoints circles
+
+                cv2.circle(img_RGB, (int(x2), int(y2)), 4, (0, 255, 0), 1)
+
+                # Draw a line in between the two points, thickness = 1, colour green
+                cv2.line(
+                    img_RGB, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 1
+                )
+
+            return cv2.imwrite("point_location_2.png", img_RGB)
 
     # function to show loaded image
     def show_image(self):
@@ -212,37 +269,65 @@ class sift_model:
     def show_keypoint(self, keypoints):
         return cv2.drawKeypoints(self.gray_image, keypoints, self.img)
 
-    # function to draw match point
+    # function to draw match point using drawMatches
     def show_matches(self, keypoint_1, keypoint_2, matches):
         return cv2.drawMatches(
-            self.gray_image,
-            keypoint_1,
-            self.gray_image,
-            keypoint_2,
-            matches,
-            self.gray_image,
-            flags=2,
+            self.gray_image, keypoint_1, matches, self.gray_image, flags=2,
         )
+
+    # function to show keypoint matches in one image
+    def show_matches_2(self, final_matches, keypoints):
+        img_RGB = cv2.cvtColor(self.gray_image, cv2.COLOR_GRAY2RGB)
+        list_point1 = []
+        list_point2 = []
+        for j in final_matches:
+            # Get the matching keypoints for each of the images
+            point1 = j.trainIdx
+            point2 = j.queryIdx
+
+            # Get the coordinates, x - columns, y - rows
+            (x1, y1) = keypoints[point1].pt
+            (x2, y2) = keypoints[point2].pt
+
+            # Append to each list
+            list_point1.append((int(x1), int(y1)))
+            list_point2.append((int(x2), int(y2)))
+
+            # Draw a small circle at both co-ordinates: radius 4, colour green, thickness = 1
+            # copy keypoints circles
+            cv2.circle(img_RGB, (int(x1), int(y1)), 4, (0, 255, 0), 1)
+            # original keypoints circles
+
+            cv2.circle(img_RGB, (int(x2), int(y2)), 4, (0, 255, 0), 1)
+
+            # Draw a line in between the two points, thickness = 1, colour green
+            cv2.line(img_RGB, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 1)
+
+        return cv2.imwrite("feature_matching.png", img_RGB)
+
+    # detecting multiple region
+    # not completed
+    # def multiple_region(self, final_matches_old):
+    #     keypoint, descriptor = self.featureExtractor()
+    #     matches = self.featureMatching()
+    #     better_matches = []
+    #     for x in matches:
+    #         if x in final_matches_old:
+    #             continue
+    #         else:
+    #             better_matches.append(x)
+    #     final_matches, retval = self.affine_ransac(better_matches)
+    #     self.compute_correlation_region(retval)
+    #     self.show_result_2(final_matches, keypoint)
+    #     return
 
     # function to save image
     def save_image(self, image_name, image):
         return cv2.imwrite(image_name, image)
 
-    def rotate(image, angle, center=None, scale=1.0):
-        (self.h, self.w) = image.shape[:2]
-
-        if center is None:
-            center = (self.w / 2, self.h / 2)
-
-        # Perform the rotation
-        M = cv2.getRotationMatrix2D(center, angle, scale)
-        rotated = cv2.warpAffine(image, M, (image.w, image.h))
-
-        return rotated
-
 
 def main():
-    img_path = "car.jpeg"
+    img_path = "3 (2)_forgery.jpg"
 
     # create model
     model = sift_model()
@@ -262,8 +347,9 @@ def main():
 
     # feature matching
     matches = model.featureMatching()
-    img_feature = model.show_matches(keypoint, keypoint, matches)
-    model.save_image("feature_matching.png", img_feature)
+    img_feature = model.show_matches_2(matches, keypoint)
+    # img_feature = model.show_matches(keypoint, keypoint, matches)
+    # model.save_image("feature_matching.png", img_feature)
 
     # Affine Transform
     final_matches, retval = model.affine_ransac(matches)
@@ -271,8 +357,11 @@ def main():
     # print(final_matches)
 
     # Region Corellation
-    last_matches = model.compute_correlation_region(final_matches, retval)
+    model.compute_correlation_region(retval)
     model.show_result(final_matches, keypoint)
+
+    # multiple detection / not completed
+    # model.multiple_region(final_matches)
 
 
 if __name__ == "__main__":
